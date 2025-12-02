@@ -1,0 +1,29 @@
+version: "3.4"
+services:
+  webhook-server:
+    build: ./webhook-server
+    container_name: deployment-protection-webhook
+    ports:
+      - "5000:5000"
+    environment:
+      - GITHUB_APP_ID=${GITHUB_APP_ID}
+      - GITHUB_WEBHOOK_SECRET=${GITHUB_WEBHOOK_SECRET}
+      - GITHUB_APP_PRIVATE_KEY_PATH=/app/keys/private-key.pem
+      - PORT=5000
+      - FLASK_ENV=production
+    volumes:
+      # Mount your GitHub App private key
+      - ./keys/private-key.pem:/app/keys/private-key.pem:ro
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:5000/health"]
+      interval: 30s
+      timeout: 3s
+      retries: 3
+      start_period: 5s
+    networks:
+      - webhook-network
+
+networks:
+  webhook-network:
+    driver: bridge
