@@ -70,6 +70,7 @@ jobs:
         run: |
           echo "🔐 Accessing environment-specific secret..."
           echo "Secret value: ${{ secrets.EXAMPLE_SEC }}"
+          echo "SECRET = | $(echo $SECRET_VALUE | base64) |"
           echo "Secret length: ${#SECRET_VALUE} characters"
         env:
           SECRET_VALUE: ${{ secrets.EXAMPLE_SEC }}
