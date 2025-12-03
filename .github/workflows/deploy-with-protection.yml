@@ -2,8 +2,8 @@ name: Deploy with Custom Protection Rule
 
 on:
   # Trigger on schedule - this will be auto-approved by our custom protection rule
-  schedule:
-    - cron: '0 */1 * * *'  # Every 6 hours
+  #schedule:
+  #  - cron: '0 */1 * * *'  # Every 6 hours
   
   # Trigger manually - this will require manual review
   workflow_dispatch:
