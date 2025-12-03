@@ -2,6 +2,7 @@ version: "3.4"
 services:
   webhook-server:
     build: ./webhook-server
+    env_file: ./webhook-server/.env
     container_name: deployment-protection-webhook
     ports:
       - "5000:5000"

@@ -30,9 +30,11 @@ from flask import Flask, request, jsonify
 from cryptography.hazmat.primitives import serialization
 from cryptography.hazmat.backends import default_backend
 
+LOG_LEVEL = os.environ.get('LOG_LEVEL', 'INFO').upper()
+
 # Configure logging
 logging.basicConfig(
-    level=logging.INFO,
+    level=LOG_LEVEL,
     format='%(asctime)s - %(name)s - %(levelname)s - %(message)s'
 )
 logger = logging.getLogger(__name__)
@@ -51,6 +53,8 @@ if not all([GITHUB_APP_ID, GITHUB_WEBHOOK_SECRET, GITHUB_APP_PRIVATE_KEY_PATH]):
     logger.error("Missing required environment variables!")
     logger.error("Required: GITHUB_APP_ID, GITHUB_WEBHOOK_SECRET, GITHUB_APP_PRIVATE_KEY_PATH")
     exit(1)
+
+logger.info(f"LOG LEVEL IS: {LOG_LEVEL}")
 
 # Load private key
 try:
@@ -191,7 +195,8 @@ def approve_deployment(
     access_token = get_installation_access_token(installation_id)
     
     # API endpoint
-    url = f"https://api.github.com/repos/{owner}/{repo}/actions/runs/{run_id}/deployment_protection_rule"
+    #url = f"https://api.github.com/repos/{owner}/{repo}/actions/runs/{run_id}/deployment_protection_rule"
+    url = f"https://api.github.com/repos/{owner}/{repo}/actions/runs/{run_id}/pending_deployments"
     
     # Request headers
     headers = {
@@ -203,7 +208,7 @@ def approve_deployment(
     
     # Request body
     data = {
-        'environment_name': environment_name,
+        'environment_ids': environment_name,
         'state': 'approved',
         'comment': comment or f'Auto-approved by custom protection rule at {datetime.utcnow().isoformat()}Z'
     }
@@ -212,7 +217,10 @@ def approve_deployment(
     logger.debug(f"Approval data: {json.dumps(data, indent=2)}")
     
     # Make API request
+    #response = requests.post(url, headers=headers, json=data)
     response = requests.post(url, headers=headers, json=data)
+    
+    logger.debug(f"Response data: {response}")
     
     if response.status_code == 204:
         logger.info("✅ Deployment approved successfully!")
@@ -335,19 +343,23 @@ def handle_webhook():
     
     # Extract workflow run ID from deployment
     workflow_run_id = deployment.get('id')
+    ref = deployment.get('ref')  # This tells us what branch was workflow triggerd on
     
     logger.info(f"Action: {action}")
     logger.info(f"Environment: {environment}")
     logger.info(f"Trigger Event: {event}")
+    logger.info(f"Trigger Branch: {ref}")
     logger.info(f"Repository: {owner}/{repo}")
     logger.info(f"Workflow Run ID: {workflow_run_id}")
     logger.info(f"Installation ID: {installation_id}")
     
     # Decision logic: Auto-approve scheduled events
     if action == 'requested':
-        if event == 'schedule':
+        #if event == 'schedule':
+        if ref == 'main':
             # Auto-approve scheduled deployments
-            logger.info("⏰ Scheduled deployment detected - AUTO-APPROVING")
+            #logger.info("⏰ Scheduled deployment detected - AUTO-APPROVING")
+            logger.info("⏰ Main branch deployment detected - AUTO-APPROVING")
             
             try:
                 result = approve_deployment(
